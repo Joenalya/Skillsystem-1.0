@@ -513,7 +513,7 @@ function rpgskills_profile()
 				}	
 				eval("\$skills_bit .= \"".$templates->get("member_profile_rpgskills_bit")."\";");
 			}
-			if(empty($skills_bit)) {$skills_bit = "Du hast keine Skills eingetragen.";};
+			if(empty($skills_bit)) {$skills_bit = "{$memprofile['username']} hat keine Skills eingetragen.";};
 			eval("\$skills_type_bit .= \"".$templates->get("member_profile_rpgskills_types")."\";");	
 		}
 		eval("\$member_profile_skills = \"".$templates->get("member_profile_rpgskills")."\";");
