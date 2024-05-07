@@ -41,14 +41,15 @@ function rpgskills_install()
 	KEY `skillid` (`skillid`)
    ) ENGINE=MyISAM".$db->build_create_table_collation());
    
-	// create settinggroup
-	$setting_group = array(
-    	'name' => 'rpgskillscp',
-    	'title' => 'Skillsystem',
-    	'description' => 'Einstellungen für das Skillsystem.',
-    	'disporder' => -1, // The order your setting group will display
-    	'isdefault' => 0
-	);
+   $maxdisporder = $db->fetch_field($db->query("SELECT MAX(disporder) FROM ".TABLE_PREFIX."settinggroups"), "MAX(disporder)");
+   // create settinggroup
+   $setting_group = array(
+	   'name' => 'rpgskillscp',
+	   'title' => 'Skillsystem',
+	   'description' => 'Einstellungen für das Skillsystem.',
+	   'disporder' => $maxdisporder+1, // The order your setting group will display
+	   'isdefault' => 0
+   );
 	
 	// insert settinggroup into database
 	$gid = $db->insert_query("settinggroups", $setting_group);
@@ -162,8 +163,7 @@ function rpgskills_install()
         'template'    => $db->escape_string('<tr>
 	<td width="49%">{$name}</td>
 	{$skillpoints}
-	<td width="0.02%">{$skilldelete}</td>
-</tr>'),
+	</tr>'),
         'sid'        => '-1',
         'version'    => '',
         'dateline'    => TIME_NOW
@@ -334,17 +334,20 @@ function rpgskills_usercp() {
 			$skill_rank = $mybb->settings['rpgskillscp_ranks'];
 			$skill_rank = explode(", ", $skill_rank);
 			$rank_count = 0;
+			$rank_select = "";
 			foreach ($skill_rank as $rank) {
 				$rank_count = $rank_count + 1;
 				$rank_select .= "<option value='{$rank_count}'>{$rank}</option>";
 			}
 			
 			$category_count = 0;
+			$type_select = "";
 			foreach ($skill_category as $cator) {
 				$category_count = $category_count + 1;
 				$type_select .= "<option value='{$category_count}'>{$cator}</option>";
 			}
 
+			$skills_type_bit = "";
 			$type_count = 0;
 			foreach($skill_category as $type) {
 				$skills_bit = "";
@@ -390,11 +393,11 @@ function rpgskills_usercp() {
 				eval("\$skills_type_bit .= \"".$templates->get("rpgskills_usercp_types")."\";");	
 			}
 			
-			if($mode_type == "2") { $secretbox = "<input type=\"checkbox\" class=\"checkbox\" name=\"skillsecret\" value=\"1\"> Soll dieser Skill nur für das Team sichtbar sein?";}
+			if($mode_type == "2") { $secretbox = "<input type=\"checkbox\" class=\"checkbox\" name=\"skillsecret\" value=\"1\"> Soll dieser Skill nur für das Team sichtbar sein?";} else {$secretbox = "";}
 			eval("\$skills_add = \"".$templates->get("rpgskills_usercp_add")."\";");
 			
 			
-			$delskill = $mybb->input['delskill'];
+			$delskill = $mybb->get_input('delskill');
 			if($delskill) {
 				$check = $db->fetch_field($db->query("SELECT skilluid FROM ".TABLE_PREFIX."rpgskills WHERE skillid = '$delskill'"), "skilluid");
 					  
@@ -403,7 +406,7 @@ function rpgskills_usercp() {
 					redirect("usercp.php?action=rpgskills");
 				}
 			}
-			
+			$colspan = 2;
 			eval("\$page= \"".$templates->get("rpgskills_usercp")."\";");
 			output_page($page);
 		}
@@ -461,23 +464,26 @@ function rpgskills_profile()
 	$skillplayer = $memprofile['uid'];
 	$mode_type = (int)$mybb->settings['rpgskillscp_mode'];
 	
-	if($mode_type == "3" && ($mybb->usergroup['cancp'] != "1" || $skillplayer != $mybb->user['uid'])) {
+	if($mode_type == "3" && ($mybb->usergroup['cancp'] != "1" && $skillplayer != $mybb->user['uid'])) {
 	} else{
 		$skill_category = $mybb->settings['rpgskillscp_category'];
 		$skill_category = explode(", ", $skill_category);	
 		
+		$skills_type_bit = "";
 		$type_count = 0;
 		foreach($skill_category as $type) {
 			$skills_bit = "";
 			$type_count = $type_count + 1;
 
 			if($mode_type == "2"){
-				if($mybb->usergroup['cancp'] != "1" || $skillplayer != $mybb->user['uid']) {
+				if($mybb->usergroup['cancp'] != "1" && $skillplayer != $mybb->user['uid']) {
 					$skillsql = "AND skillsecret NOT LIKE '1'";
 				} else {
 					$skillsql = "";
 				}
-			};
+			} else {
+				$skillsql = "";
+			}
 			
 			$query = $db->query("
 			SELECT * FROM ".TABLE_PREFIX."rpgskills
@@ -510,7 +516,7 @@ function rpgskills_profile()
 						eval("\$skillpoints .= \"".$templates->get("rpgskills_point_inactive")."\";");
 					} 
 
-				}	
+				}
 				eval("\$skills_bit .= \"".$templates->get("member_profile_rpgskills_bit")."\";");
 			}
 			if(empty($skills_bit)) {$skills_bit = "{$memprofile['username']} hat keine Skills eingetragen.";};
@@ -524,10 +530,10 @@ function rpgskills_user_activity($user_activity)
 {
     global $user;
 
-    if (my_strpos ($user['location'], "usercp.php?action=rpgskills") !== false) {
+    if (isset($user['location']) && my_strpos($user['location'], "usercp.php?action=rpgskills") !== false) {
         $user_activity['activity'] = "rpgskills";
     }
-
+	
     return $user_activity;
 }
 
