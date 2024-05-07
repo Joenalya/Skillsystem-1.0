@@ -461,8 +461,8 @@ function rpgskills_profile()
 	$skillplayer = $memprofile['uid'];
 	$mode_type = (int)$mybb->settings['rpgskillscp_mode'];
 	
-	if($mode_type != "3" || $mybb->usergroup['cancp'] == "1" || $skillplayer == $memprofile['uid']) {
-	
+	if($mode_type == "3" && ($mybb->usergroup['cancp'] != "1" || $skillplayer != $memprofile['uid'])) {
+	} else{
 		$skill_category = $mybb->settings['rpgskillscp_category'];
 		$skill_category = explode(", ", $skill_category);	
 		
@@ -472,10 +472,10 @@ function rpgskills_profile()
 			$type_count = $type_count + 1;
 
 			if($mode_type == "2"){
-				if($mybb->usergroup['cancp'] == "1" || $skillplayer == $memprofile['uid']) {
-					$skillsql = "";
-				} else {
+				if($mybb->usergroup['cancp'] != "1" || $skillplayer != $memprofile['uid']) {
 					$skillsql = "AND skillsecret NOT LIKE '1'";
+				} else {
+					$skillsql = "";
 				}
 			};
 			
