@@ -19,7 +19,7 @@ function rpgskills_info()
         "website"        => "https://github.com/Joenalya",
         "author"        => "Joenalya aka. Anne",
         "authorsite"    => "https://github.com/Joenalya",
-        "version"        => "1.0",
+        "version"        => "1.1",
         "codename"        => "rpgskills",
         "compatibility" => "18"
     );
@@ -83,7 +83,21 @@ function rpgskills_install()
 			'optionscode'	=> 'text',
         	'value' => 'Amateur, Fortgeschritten, Professionell, Meister, Paragon, Mythisch', // Default
         	'disporder' => 4
-    	),			
+    	),	
+    	'rpgskillscp_edit' => array(
+        	'title' => 'Skills bearbeiten?',
+        	'description' => 'Sollen User in der Lage sein, nach dem WoB noch Skills zu bearbeiten/erstellen?',
+			'optionscode'	=> 'yesno',
+        	'value' => '0', // Default
+        	'disporder' => 5
+    	),	
+    	'rpgskillscp_grp' => array(
+        	'title' => 'Bewerbergruppe',
+        	'description' => 'Welche Gruppe ist für Bewerber?',
+			'optionscode'	=> 'groupselect',
+        	'value' => '', // Default
+        	'disporder' => 6
+    	),
 	);
 
 	// insert settings into database
@@ -325,6 +339,8 @@ function rpgskills_usercp() {
 		} else {
 		
 			$mode_type = (int)$mybb->settings['rpgskillscp_mode'];
+			$skill_grp = (int)$mybb->settings['rpgskillscp_grp'];
+			$skill_edittype = (int)$mybb->settings['rpgskillscp_edit'];
 			
 			$skillid = $mybb->user['uid'];
 				
@@ -377,15 +393,19 @@ function rpgskills_usercp() {
 					foreach ($skillpoints_base as $rank) {
 						$base_count = $base_count + 1;
 						
-                        if($base_count <= $skillpoint){
-                            eval("\$skillpoints .= \"".$templates->get("rpgskills_point_active")."\";");
-                        } else {
-                            eval("\$skillpoints .= \"".$templates->get("rpgskills_point_inactive")."\";");
-                        } 
+		                        if($base_count <= $skillpoint){
+		                            eval("\$skillpoints .= \"".$templates->get("rpgskills_point_active")."\";");
+		                        } else {
+		                            eval("\$skillpoints .= \"".$templates->get("rpgskills_point_inactive")."\";");
+		                        } 
 
 					}
 					
-					$skilldelete =  "<a href=\"usercp.php?action=rpgskills&delskill={$id}\">x</a>";
+					if($skill_edittype != "1" && ($mybb->user['usergroup'] != $skill_grp && $mybb->user['additionalgroups'] != $skill_grp)) {
+						$skilldelete = "";
+					} else {
+						$skilldelete =  "<a href=\"usercp.php?action=rpgskills&delskill={$id}\">x</a>";
+					}
 					
 					eval("\$skills_bit .= \"".$templates->get("rpgskills_usercp_bit")."\";");
 				}
@@ -394,7 +414,12 @@ function rpgskills_usercp() {
 			}
 			
 			if($mode_type == "2") { $secretbox = "<input type=\"checkbox\" class=\"checkbox\" name=\"skillsecret\" value=\"1\"> Soll dieser Skill nur für das Team sichtbar sein?";} else {$secretbox = "";}
-			eval("\$skills_add = \"".$templates->get("rpgskills_usercp_add")."\";");
+			
+			if($skill_edittype != "1" && ($mybb->user['usergroup'] != $skill_grp && $mybb->user['additionalgroups'] != $skill_grp)) {
+				$skills_add = "";
+			} else {
+				eval("\$skills_add = \"".$templates->get("rpgskills_usercp_add")."\";");
+			}
 			
 			
 			$delskill = $mybb->get_input('delskill');
@@ -418,14 +443,9 @@ function rpgskills_usercp() {
 		$skilladd = $mybb->input['skilladd'];
 		if($mybb->request_method == "post") {
 			
-			$skillname = $db->escape_string($_POST['skillname']);
-			$skillgain = $db->escape_string($_POST['skillgain']);
-			$skilltype = $db->escape_string($_POST['skilltype']);
-			$skilluid = $db->escape_string($_POST['uid']);
-			$skillsecret = $db->escape_string($_POST['skillsecret']);
-			
+			$skillname = $db->escape_string($mybb->get_input('skillname'));
+			$skilluid = $mybb->user['uid'];
 			$check = $db->fetch_field($db->query("SELECT skillid FROM ".TABLE_PREFIX."rpgskills WHERE skilluid = '$skilluid' AND skillname = '$skillname'"), "skillid");
-			
 			
 			if($mybb->input['skillname'] == "") {
 				error("Es muss ein Skill angegeben werden!");
@@ -438,11 +458,11 @@ function rpgskills_usercp() {
 			}
 			else {
 				$new_record = array(
-				  "skilluid" => $db->escape_string($skilluid),				
-				  "skillname" => $db->escape_string($skillname),
-				  "skilltype" => $db->escape_string($skilltype),				  
-				  "skillgain" => $db->escape_string($skillgain),
-				  "skillsecret" => $db->escape_string($skillsecret)
+				  "skilluid" => $mybb->user['uid'],
+				  "skillname" => $db->escape_string($mybb->get_input('skillname')),
+				  "skilltype" => $db->escape_string($mybb->get_input('skilltype')),
+				  "skillgain" => $db->escape_string($mybb->get_input('skillgain')),
+				  "skillsecret" => $db->escape_string($mybb->get_input('skillsecret'))
 				);
 				
 				if($check){
