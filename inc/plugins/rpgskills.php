@@ -94,7 +94,7 @@ function rpgskills_install()
     	'rpgskillscp_grp' => array(
         	'title' => 'Bewerbergruppe',
         	'description' => 'Welche Gruppe ist für Bewerber?',
-			'optionscode'	=> 'groupselect',
+			'optionscode'	=> 'groupselectsingle',
         	'value' => '', // Default
         	'disporder' => 6
     	),
